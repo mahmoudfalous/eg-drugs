@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ae26f3e2-31ed-48cb-b710-1df4379e955a" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/home/mano/Desktop/new-drugs/final_db" value="3FQ75syn0TkkGtgnkKI9rC11EyC" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="4" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0000004297497094" />
+      <entry key="S2" value="1.02560376886072" />
+      <entry key="S5" value="1.2308455776823488" />
+      <entry key="S10" value="1.480463919230517" />
+      <entry key="S30" value="1.783225694565048" />
+      <entry key="S60" value="1.8850003924095446" />
+      <entry key="M2" value="1.9407445946746358" />
+      <entry key="M5" value="1.9758626420138923" />
+      <entry key="M10" value="1.9878576020934862" />
+      <entry key="M15" value="1.9918885970428999" />
+      <entry key="M30" value="1.9959360406386044" />
+      <entry key="H1" value="1.9979659516429429" />
+      <entry key="H2" value="1.9989824581257385" />
+      <entry key="H4" value="1.999491099573047" />
+      <entry key="D1" value="1.9999151652718818" />
+      <entry key="W1" value="1.9999878803124744" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="0.9201876506248751" />
+      <entry key="MS500" value="0.9835024445321862" />
+      <entry key="S2" value="1.0205214370538505" />
+      <entry key="S5" value="1.22578446538389" />
+      <entry key="S10" value="1.4760822256332187" />
+      <entry key="S30" value="1.7810145555524903" />
+      <entry key="S60" value="1.8837684884095773" />
+      <entry key="M2" value="1.9400940289377218" />
+      <entry key="M5" value="1.9755936911338767" />
+      <entry key="M10" value="1.9877216364825074" />
+      <entry key="M15" value="1.9917976194333533" />
+      <entry key="M30" value="1.9958903842147855" />
+      <entry key="H1" value="1.9979430813974715" />
+      <entry key="H2" value="1.9989710124784739" />
+      <entry key="H4" value="1.9994853741162626" />
+      <entry key="D1" value="1.9999142106631975" />
+      <entry key="W1" value="1.9999877439308424" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3FQ75syn0TkkGtgnkKI9rC11EyC" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "/home/mano/Desktop/new-drugs/final_db/data",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/data" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-PY-261.24374.152" />
+        <option value="bundled-python-sdk-c59985aa861c-c2ffad84badb-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-261.24374.152" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ae26f3e2-31ed-48cb-b710-1df4379e955a" name="Changes" comment="" />
+      <created>1781995258854</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1781995258854</updated>
+      <workItem from="1781995259891" duration="767000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>
