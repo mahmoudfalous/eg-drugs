@@ -30,15 +30,12 @@ All formats share the exact same schema structure:
 | `company` | TEXT | String | Manufacturing or distributing pharmaceutical company. |
 | `price` | TEXT | String | Current retail price in EGP. |
 | `oldprice` | TEXT | String | Previous retail price in EGP (for tracking price updates). |
-| `availability` | TEXT | String | Availability indicator / stock status code. |
 | `barcode` | TEXT | String | Barcode number (EAN/GTIN). |
 | `barcode_valid` | TEXT (0/1) | String ("0"/"1") | GS1 checksum validation flag (`1` = valid GTIN, `0` = invalid/absent). |
 | `slug` | TEXT | String | URL-friendly slug identifier. |
 | `units` | TEXT | String | Number of packaging units / pack size. |
 | `description` | TEXT | String | Category classification (e.g., `cold products`, `antineoplastic`). |
 | `uses` | TEXT | String | Indications and therapeutic usage in Arabic. |
-| `source` | TEXT | String | Data origin (`page` = direct product page, `search` = directory listing). |
-| `fetched_at` | TEXT | String | ISO 8601 UTC timestamp of when the record was collected. |
 
 ---
 
@@ -55,15 +52,12 @@ All formats share the exact same schema structure:
   "company": "hikma pharma",
   "price": "40",
   "oldprice": "32",
-  "availability": "5844",
   "barcode": "6221000003295",
   "slug": "1-2-3--one-two-three--syrup-120-ml",
   "units": "1",
   "description": "cold products",
   "uses": "تخفيف أعراض نزلات البرد والإنفلونزا مثل الصداع وارتفاع درجة الحرارة...",
-  "barcode_valid": "1",
-  "source": "search",
-  "fetched_at": "2026-10-27T12:37:17+00:00"
+  "barcode_valid": "1"
 }
 ```
 
