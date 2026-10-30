@@ -63,6 +63,39 @@ All formats share the exact same schema structure:
 
 ---
 
+## Free Public Search API
+
+A live, zero-latency REST search API is available at:
+**`https://eg-drugs-api.mahmoudfalous.workers.dev/`**
+
+### Endpoints
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/search?q={term}&limit={20}` | `GET` | Bilingual full-text search across brand names, Arabic names, active ingredients, and barcodes. |
+| `/drugs/{id}` | `GET` | Fetch drug details by record ID. |
+| `/barcode/{barcode}` | `GET` | Direct lookup by barcode (GTIN/EAN). |
+
+### Example Queries
+
+```bash
+# Search for Concor products
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/search?q=concor&limit=3"
+
+# Search in Arabic
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/search?q=باراسيتامول&limit=3"
+
+# Look up by barcode
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/barcode/6221000003295"
+
+# Fetch drug by ID
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/drugs/1"
+```
+
+* **CORS**: Enabled (`Access-Control-Allow-Origin: *`) for direct calls from browsers, frontends, and mobile apps.
+
+---
+
 ## Loading and Usage Guidelines
 
 ### 1. SQLite Database (`data/eg_drugs.sqlite`)
@@ -137,8 +170,11 @@ console.log(`Found ${aspirin.length} aspirin products.`);
 
 ---
 
-## License & Contact
+## License & Attribution
 
-* **Usage**: You are free to use this database in any unpaid (non-commercial) projects and research.
-* **Updates**: Updated automatically via daily sync pipeline from [dwa-scrapping](https://github.com/mahmoudfalous/dwa-scrapping).
+* **Dataset / Database**: Licensed under [Creative Commons Attribution 4.0 International (CC-BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Free for both **commercial and non-commercial** use with attribution.
+* **Code & Scripts**: Licensed under the [MIT License](LICENSE).
+* **Attribution**: If you use this database in your app, website, or research, please cite or credit:
+  > *Egyptian Drug Database (`eg-drugs`) by Mahmoud Mohamed (https://github.com/mahmoudfalous/eg-drugs)*
+* **Updates**: Continuously updated via automated synchronization pipelines.
 * **Contact**: [mahmoudfalous@gmail.com](mailto:mahmoudfalous@gmail.com).
