@@ -1,6 +1,6 @@
 # Egyptian Drug Database (`eg_drugs`)
 
-A clean, standardized, and continuously updated pharmaceutical database containing **27,617+ drugs marketed in Egypt**, including active ingredients, commercial names in Arabic and English, current and historical prices, manufacturers, barcodes, and medical categories.
+A clean, standardized, and continuously updated pharmaceutical database containing **27,617+ drugs marketed in Egypt**, including active ingredients, commercial names in Arabic and English, current and previous retail prices (`price` and `oldprice`), manufacturers, barcodes, and medical categories.
 
 All files are located in the `data/` directory and available in **CSV**, **JSON**, **SQLite**, and **SQL dump** formats.
 
@@ -63,36 +63,157 @@ All formats share the exact same schema structure:
 
 ---
 
-## Free Public Search API
+## Free Public Search API (v1)
 
-A live, zero-latency REST search API is available at:
+A hosted, sub-10ms REST search API is available at:
 **`https://eg-drugs-api.mahmoudfalous.workers.dev/`**
 
-### Endpoints
+### Rate Limits & Policies
+* **Rate Limit**: **60 requests / minute per IP** (sliding window).
+* **CORS**: Fully enabled (`Access-Control-Allow-Origin: *`) for web and mobile clients.
+* **Headers returned**:
+  * `RateLimit-Limit: 60`
+  * `RateLimit-Remaining: <remaining_requests>`
+  * `RateLimit-Reset: <seconds_until_window_reset>`
+
+### Endpoints Overview
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `/search?q={term}&limit={20}` | `GET` | Bilingual full-text search across brand names, Arabic names, active ingredients, and barcodes. |
-| `/drugs/{id}` | `GET` | Fetch drug details by record ID. |
-| `/barcode/{barcode}` | `GET` | Direct lookup by barcode (GTIN/EAN). |
+| `/v1/search` | `GET` | Paginated search across English, Arabic, active ingredients, and barcodes. |
+| `/v1/drugs/{id}` | `GET` | Retrieve a drug record by ID. |
+| `/v1/barcode/{barcode}` | `GET` | Direct lookup by barcode (GTIN / EAN). |
 
-### Example Queries
+---
+
+### Query Parameters for `/v1/search`
+
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `q` | String | **Yes** | — | Search term (e.g., `concor`, `باراسيتامول`, `6221000003295`). Character `%` is not allowed. |
+| `page` | Integer | No | `1` | Page number ($\ge 1$). |
+| `limit` | Integer | No | `20` | Results per page ($1 \le \text{limit} \le 100$). |
+
+---
+
+### Complete Response Examples
+
+#### 1. Search Query with Pagination (`GET /v1/search?q=concor&page=1&limit=2`)
 
 ```bash
-# Search for Concor products
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/search?q=concor&limit=3"
-
-# Search in Arabic
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/search?q=باراسيتامول&limit=3"
-
-# Look up by barcode
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/barcode/6221000003295"
-
-# Fetch drug by ID
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/drugs/1"
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/v1/search?q=concor&page=1&limit=2"
 ```
 
-* **CORS**: Enabled (`Access-Control-Allow-Origin: *`) for direct calls from browsers, frontends, and mobile apps.
+```json
+{
+  "query": "concor",
+  "pagination": {
+    "page": 1,
+    "limit": 2,
+    "total_results": 32,
+    "total_pages": 16,
+    "has_next": true,
+    "has_prev": false
+  },
+  "results": [
+    {
+      "id": 2973,
+      "name": "concor 10mg 30 f.c. tablets",
+      "arabic": "كونكور 10مجم 30 قرص",
+      "active": "bisoprolol fumarate",
+      "company": "amoun > merck kgaa f.r.germany",
+      "price": "99",
+      "oldprice": "70.5",
+      "barcode": "6221025032362",
+      "barcode_valid": "1",
+      "slug": "concor-10mg-30-f.c.-tablets",
+      "units": "3",
+      "description": "antihypertensive.beta blocker.selective b1",
+      "uses": "لمرضى ضغط الدم المرتفع"
+    },
+    {
+      "id": 2974,
+      "name": "concor plus 10/25mg 30 f.c. tablets",
+      "arabic": "كونكور  بلس 10/25مجم 30 قرص",
+      "active": "bisoprolol fumarate+hydrochlorothiazide",
+      "company": "amoun > merck kgaa f.r.germany",
+      "price": "108",
+      "oldprice": "79.5",
+      "barcode": "6221025032379",
+      "barcode_valid": "1",
+      "slug": "concor-plus-10-25mg-30-f.c.-tablets",
+      "units": "3",
+      "description": "antihypertensive.combined beta blocker with diuretic",
+      "uses": "علاج ارتفاع ضغط الدم"
+    }
+  ]
+}
+```
+
+#### 2. Get Drug by ID (`GET /v1/drugs/1`)
+
+```bash
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/v1/drugs/1"
+```
+
+```json
+{
+  "id": 1,
+  "name": "1 2 3 (one two three) syrup 120 ml",
+  "arabic": "ون تو ثري شراب 120 مل",
+  "active": "chlorpheniramine+paracetamol+pseudoephedrine",
+  "company": "hikma pharma",
+  "price": "40",
+  "oldprice": "32",
+  "barcode": "6221000003295",
+  "barcode_valid": "1",
+  "slug": "1-2-3--one-two-three--syrup-120-ml",
+  "units": "1",
+  "description": "cold products",
+  "uses": "تخفيف أعراض نزلات البرد والإنفلونزا مثل الصداع وارتفاع درجة الحرارة..."
+}
+```
+
+#### 3. Lookup by Barcode (`GET /v1/barcode/6221000003295`)
+
+```bash
+curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/v1/barcode/6221000003295"
+```
+
+#### 4. Error Responses
+
+* **`400 Bad Request` (Missing Parameter)**:
+  ```json
+  {
+    "error": {
+      "code": "MISSING_QUERY",
+      "message": "Query parameter 'q' is required. Example: /v1/search?q=concor",
+      "status": 400
+    }
+  }
+  ```
+
+* **`404 Not Found` (Resource Not Found)**:
+  ```json
+  {
+    "error": {
+      "code": "DRUG_NOT_FOUND",
+      "message": "Drug with ID 999999 was not found.",
+      "status": 404
+    }
+  }
+  ```
+
+* **`429 Too Many Requests` (Rate Limit Exceeded)**:
+  ```json
+  {
+    "error": {
+      "code": "RATE_LIMIT_EXCEEDED",
+      "message": "Rate limit exceeded. Maximum 60 requests per minute per IP.",
+      "status": 429
+    }
+  }
+  ```
 
 ---
 
@@ -172,9 +293,9 @@ console.log(`Found ${aspirin.length} aspirin products.`);
 
 ## License & Attribution
 
-* **Dataset / Database**: Licensed under [Creative Commons Attribution 4.0 International (CC-BY 4.0)](https://creativecommons.org/licenses/by/4.0/). Free for both **commercial and non-commercial** use with attribution.
-* **Code & Scripts**: Licensed under the [MIT License](LICENSE).
-* **Attribution**: If you use this database in your app, website, or research, please cite or credit:
+* **Dataset / Database (`data/`)**: Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE-DATA). Free for both **commercial and non-commercial** use with attribution.
+* **Code & Tooling**: Licensed under the [MIT License](LICENSE-MIT).
+* **Attribution**: If you use this database in your app, website, or research, please cite:
   > *Egyptian Drug Database (`eg-drugs`) by Mahmoud Mohamed (https://github.com/mahmoudfalous/eg-drugs)*
 * **Updates**: Continuously updated via automated synchronization pipelines.
 * **Contact**: [mahmoudfalous@gmail.com](mailto:mahmoudfalous@gmail.com).
