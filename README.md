@@ -4,6 +4,7 @@ A clean, standardized, and continuously updated pharmaceutical database containi
 
 All files are located in the `data/` directory and available in **CSV**, **JSON**, **SQLite**, and **SQL dump** formats.
 
+
 ---
 
 ## Files Overview
@@ -299,3 +300,6 @@ console.log(`Found ${aspirin.length} aspirin products.`);
   > *Egyptian Drug Database (`eg-drugs`) by Mahmoud Mohamed (https://github.com/mahmoudfalous/eg-drugs)*
 * **Updates**: Continuously updated via automated synchronization pipelines.
 * **Contact**: [mahmoudfalous@gmail.com](mailto:mahmoudfalous@gmail.com).
+
+  [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github)](https://github.com/sponsors/mahmoudfalous)
+
