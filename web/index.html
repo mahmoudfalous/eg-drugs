@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f7f9fc; color: #222; line-height: 1.6; padding: 20px; }
-    .container { max-width: 900px; margin: 0 auto; }
+    .container { max-width: 1100px; margin: 0 auto; }
     header { background: #0d6efd; color: #fff; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }
     header h1 { font-size: 1.5rem; margin-bottom: 8px; }
     header p { opacity: 0.9; font-size: 0.95rem; }
@@ -18,15 +18,18 @@
     button { padding: 12px 24px; background: #0d6efd; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
     button:hover { background: #0b5ed7; }
     button:active { transform: translateY(1px); }
+    button.secondary { background: #6c757d; }
+    button.secondary:hover { background: #5a6268; }
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; text-align: center; }
     .stat-box { background: #eef4ff; padding: 14px; border-radius: 8px; }
     .stat-box .value { font-size: 1.4rem; font-weight: bold; color: #0d6efd; }
     .stat-box .label { font-size: 0.85rem; color: #666; margin-top: 4px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95rem; }
-    th, td { padding: 10px 12px; border: 1px solid #e0e0e0; text-align: right; }
+    th, td { padding: 10px 12px; border: 1px solid #e0e0e0; text-align: right; cursor: pointer; user-select: none; }
     th { background: #f4f6f8; font-weight: 600; color: #333; }
     tr:nth-child(even) { background: #fafbfc; }
     tr:hover { background: #e7f1ff; }
+    tr.selected { background: #cfe2ff !important; font-weight: 600; }
     .arabic { direction: rtl; }
     .price { font-weight: 600; color: #0d6efd; }
     .oldprice { color: #888; text-decoration: line-through; font-size: 0.9rem; }
@@ -38,10 +41,19 @@
     .api-link { margin-top: 20px; text-align: center; }
     .api-link a { color: #0d6efd; text-decoration: none; }
     .api-link a:hover { text-decoration: underline; }
+    .section-title { margin: 30px 0 15px; font-size: 1.25rem; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 8px; }
+    .generics-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 20px; margin-top: 20px; display: none; }
+    .generics-card h3 { margin-bottom: 15px; color: #0d6efd; font-size: 1.2rem; }
+    .generics-table { font-size: 0.9rem; }
+    .generics-table th { background: #f8f9fa; }
+    .cheapest { color: #155724; font-weight: 700; }
+    .most-expensive { color: #721c24; font-weight: 700; }
+    .back-btn { margin-bottom: 15px; }
     @media (max-width: 600px) {
       body { padding: 10px; }
       .search-box { grid-template-columns: 1fr; }
       th, td { padding: 8px 6px; font-size: 0.85rem; }
+      .generics-table th, .generics-table td { padding: 6px 8px; font-size: 0.8rem; }
     }
   </style>
 </head>
@@ -56,7 +68,7 @@
       <div class="stats" id="stats"></div>
 
       <div class="search-box">
-        <input type="text" id="searchInput" placeholder="ابحث عن دواء (مثل: بانادول، باراسيتامول، هيبما)..." />
+        <input type="text" id="searchInput" placeholder="ابحث عن دواء (مثل: بانادول، باراسيتامول، هيmediately)..." />
         <button id="searchBtn">بحث</button>
       </div>
 
@@ -80,6 +92,27 @@
       </table>
       <div id="noResults" class="no-results" style="display:none;">لم يتم العثور على نتائج.</div>
 
+      <!-- بطاقة الأدوية البديلة -->
+      <div id="genericsCard" class="generics-card">
+        <button class="back-btn secondary" onclick="hideGenerics()">← العودة للنتائج</button>
+        <h3 id="genericsTitle">الأدوية البديلة — <span id="genericsActive"></span></h3>
+        <p id="genericsNote" style="color:#666; font-size:0.9rem; margin-bottom:15px;"></p>
+        <table class="generics-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم العربي</th>
+              <th>الاسم الإنجليزي</th>
+              <th>الشركة</th>
+              <th>السعر</th>
+              <th>السعر السابق</th>
+              <th>التقييم</th>
+            </tr>
+          </thead>
+          <tbody id="genericsBody"></tbody>
+        </table>
+      </div>
+
       <div class="api-link">
         <p>واجهة برمجة التطبيقات: <a href="/docs" target="_blank">/docs</a> &nbsp;|&nbsp; <a href="https://github.com/abduallahJamal/eg-drugs" target="_blank">المستودع على GitHub</a></p>
       </div>
@@ -95,6 +128,13 @@
     const resultsCount = document.getElementById('resultsCount');
     const loading = document.getElementById('loading');
     const statsEl = document.getElementById('stats');
+    const genericsCard = document.getElementById('genericsCard');
+    const genericsBody = document.getElementById('genericsBody');
+    const genericsTitle = document.getElementById('genericsTitle');
+    const genericsNote = document.getElementById('genericsNote');
+    const genericsActiveSpan = document.getElementById('genericsActive');
+
+    let currentResults = []; // Cache for current search results
 
     async function loadStats() {
       try {
@@ -114,6 +154,7 @@
     }
 
     async function searchDrugs(query) {
+      hideGenerics();
       loading.style.display = 'block';
       noResults.style.display = 'none';
       resultsBody.innerHTML = '';
@@ -124,15 +165,17 @@
         const drugs = await res.json();
 
         loading.style.display = 'none';
-        if (!drugs || drugs.length === 0) {
+        currentResults = drugs || [];
+        if (!currentResults.length) {
           noResults.style.display = 'block';
           resultsCount.textContent = '';
           return;
         }
 
-        resultsCount.textContent = `تم العثور على ${drugs.length} نتيجة`;
-        drugs.forEach((d, i) => {
+        resultsCount.textContent = `تم العثور على ${currentResults.length} نتيجة`;
+        currentResults.forEach((d, i) => {
           const tr = document.createElement('tr');
+          tr.onclick = () => selectDrug(d);
           const barcodeBadge = d.barcode_valid === '1'
             ? `<span class="badge valid">صحيح</span>`
             : `<span class="badge invalid">غير صحيح</span>`;
@@ -157,6 +200,75 @@
       }
     }
 
+    function selectDrug(drug) {
+      // تحدد الصف المختار في جدول النتائج
+      const rows = resultsBody.querySelectorAll('tr');
+      rows.forEach(r => r.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+
+      // إظهار بطاقة الأدوية البديلة
+      showGenerics(drug);
+    }
+
+    async function showGenerics(drug) {
+      const active = drug.active;
+      genericsActiveSpan.textContent = active || 'غير محدد';
+      genericsTitle.innerHTML = `الأدوية البديلة — <span style="color:#666;">${active || 'غير محدد'}</span>`;
+      genericsNote.textContent = `الأدوية التي تحتوي على نفس المادة الفعالة ("${active || 'غير محدد'}") لمقارنة الأسعار والاختيار من بينها.`;
+      genericsBody.innerHTML = '';
+      genericsCard.style.display = 'block';
+
+      if (!active) {
+        genericsBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#666;">لا توجد مادة فعالة مسجلة لهذا الدواء.</td></tr>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/drugs/generics/${encodeURIComponent(active)}&limit=100`);
+        const generics = await res.json();
+
+        if (!generics || generics.length === 0) {
+          genericsBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#666;">لا توجد أدوية بديلة مسجلة لهذه المادة الفعالة.</td></tr>`;
+          return;
+        }
+
+        // تحديد الأرخص والأغلى
+        const withPrice = generics.filter(g => g.price && !isNaN(parseFloat(g.price)));
+        let minPrice = null, maxPrice = null;
+        if (withPrice.length) {
+          minPrice = withPrice.reduce((a, b) => parseFloat(a.price) < parseFloat(b.price) ? a : b);
+          maxPrice = withPrice.reduce((a, b) => parseFloat(a.price) > parseFloat(b.price) ? a : b);
+        }
+
+        generics.forEach((g, i) => {
+          const tr = document.createElement('tr');
+          let badge = '';
+          if (minPrice && g.id === minPrice.id) badge = '<span class="cheapest">الأرخص</span>';
+          if (maxPrice && g.id === maxPrice.id) badge = '<span class="most-expensive">الأغلى</span>';
+
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td class="arabic">${g.arabic || '-'}</td>
+            <td>${g.name || '-'}</td>
+            <td>${g.company || '-'}</td>
+            <td><span class="price">${g.price || '-'} ج.م</span></td>
+            <td><span class="oldprice">${g.oldprice || '-'} ج.م</span></td>
+            <td>${badge}</td>
+          `;
+          genericsBody.appendChild(tr);
+        });
+      } catch (e) {
+        genericsBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#721c24;">حدث خطأ أثناء جلب الأدوية البديلة.</td></tr>`;
+        console.error(e);
+      }
+    }
+
+    function hideGenerics() {
+      genericsCard.style.display = 'none';
+      const rows = resultsBody.querySelectorAll('tr');
+      rows.forEach(r => r.classList.remove('selected'));
+    }
+
     searchBtn.addEventListener('click', () => {
       const q = searchInput.value.trim();
       if (q) searchDrugs(q);
@@ -169,7 +281,11 @@
       }
     });
 
-    // Load stats on page load
+    // إخفاء بطاقة البدائل عند البحث الجديد
+    const origSearch = searchDrugs;
+    window.searchDrugsWrapper = origSearch;
+
+    // تحميل الإحصائيات عند فتح الصفحة
     loadStats();
   </script>
 </body>
