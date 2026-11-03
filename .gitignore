@@ -36,3 +36,6 @@ yarn-error.log*
 venv/
 .venv/
 env/
+data/exports/
+data/price_changes*.json
+quality-report.json

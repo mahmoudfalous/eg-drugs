@@ -12,6 +12,7 @@ eg-drugs REST API
 توثيق تفاعلي: http://localhost:8000/docs
 """
 
+import json
 import sqlite3
 from pathlib import Path
 from typing import Optional, List
@@ -249,6 +250,39 @@ def get_stats():
         )
     finally:
         conn.close()
+
+
+PRICE_CHANGES_PATH = Path(__file__).resolve().parent.parent / "data" / "price_changes.json"
+PRICE_CHANGES_SUMMARY_PATH = Path(__file__).resolve().parent.parent / "data" / "price_changes_summary.json"
+
+
+@app.get("/price-changes", tags=["Stats"])
+def get_price_changes():
+    """
+    إرجاع قائمة تغييرات الأسعار التي تم رصدها عبر سكريبت price_tracker.
+    يتطلب تشغيل tools/price_tracker.py أولاً لإنشاء ملف data/price_changes.json.
+    """
+    if not PRICE_CHANGES_PATH.exists():
+        return {
+            "message": "لا توجد بيانات تغييرات أسعار. شغّل tools/price_tracker.py أولاً.",
+            "changes": [],
+        }
+    with open(PRICE_CHANGES_PATH, encoding="utf-8") as f:
+        changes = json.load(f)
+    return {"changes": changes, "count": len(changes)}
+
+
+@app.get("/price-changes/summary", tags=["Stats"])
+def get_price_changes_summary():
+    """إرجاع ملخص إحصائي لتغييرات الأسعار."""
+    if not PRICE_CHANGES_SUMMARY_PATH.exists():
+        return {
+            "message": "لا توجد بيانات ملخص تغييرات الأسعار. شغّل tools/price_tracker.py أولاً.",
+            "summary": {},
+        }
+    with open(PRICE_CHANGES_SUMMARY_PATH, encoding="utf-8") as f:
+        summary = json.load(f)
+    return summary
 
 
 @app.get("/health", tags=["General"])
