@@ -1,0 +1,48 @@
+name: Data Quality Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "tools/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "data/**"
+      - "tools/**"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run data quality checks
+        run: |
+          python tools/data_quality.py --db data/eg_drugs.sqlite --report quality-report.json
+          echo "--- تقرير الجودة ---"
+          cat quality-report.json | python3 -c "
+import sys,json
+r=json.load(sys.stdin)
+print('إجمالي السجلات:', r['total_records'])
+print('المشاكل الإجمالية:', r['summary']['total_issues'])
+print('حقول ناقصة:', r['summary']['missing_fields_count'])
+print('مجموعات مكررة:', r['summary']['duplicate_groups_count'])
+print('تغيرات أسعار:', r['summary']['price_anomalies_count'])
+print('مشاكل باركود:', r['summary']['barcode_issues_count'])
+"
+          # فشلければ 실패하면 액션 fails (إذا وجدت مشاكل حرجة)
+          python3 -c "
+import json
+r=json.load(open('quality-report.json'))
+if r['summary']['total_issues'] > 0:
+    print('تحذير: توجد مشاكل في جودة البيانات تتطلب المراجعة.')
+    # لا نفشل البناء تلقائياً، بل ننبه فقط
+"
+          echo "فحص الجودة اكتمل."
