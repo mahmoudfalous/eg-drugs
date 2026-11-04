@@ -1,9 +1,9 @@
 """
-العميل الرئيسي لمكتبة eg-drugs (Python SDK).
+Main client for the eg-drugs Python SDK.
 
-يدعم العمل بطريقتين:
-1. محليًا: قراءة من ملف SQLite أو JSON موجود في المستودع.
-2. عن بعد: استدعاء واجهة برمجة التطبيقات (REST API) عبر HTTP.
+Supports two modes of operation:
+1. Local: read from a SQLite or JSON file present in the repository.
+2. Remote: call the REST API over HTTP.
 """
 
 from __future__ import annotations
@@ -27,12 +27,12 @@ DEFAULT_JSON_PATH = (
 
 class EgDrugsClient:
     """
-    عميل للبحث في قاعدة بيانات الأدوية المصرية.
+    Client for searching the Egyptian Drug Database.
 
-    매개변수:
-        base_url: عنوان واجهة برمجة التطبيقات (اختياري). إذا لم يُعطى، تُستخدم الملفات المحلية.
-        db_path: مسار ملف SQLite المحلي (اختياري).
-        json_path: مسار ملف JSON المحلي (اختياري).
+    Parameters:
+        base_url: REST API base URL (optional). If not given, local files are used.
+        db_path: Path to local SQLite file (optional).
+        json_path: Path to local JSON file (optional).
     """
 
     def __init__(
@@ -46,11 +46,13 @@ class EgDrugsClient:
         self.json_path = Path(json_path) if json_path else DEFAULT_JSON_PATH
 
     # ------------------------------------------------------------------
-    # 내부 helper: استدعاء API عن بعد
+    # Internal helper: call remote API
     # ------------------------------------------------------------------
     def _fetch_json(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
         if not self.base_url:
-            raise RuntimeError("base_url غير محدد. يرجى تمريره عند إنشاء العميل أو استخدام الملفات المحلية.")
+            raise RuntimeError(
+                "base_url is not set. Pass it when creating the client or use local files."
+            )
         url = self.base_url + path
         if params:
             url += "?" + urllib.parse.urlencode(params)
@@ -58,7 +60,7 @@ class EgDrugsClient:
             return json.loads(resp.read().decode("utf-8"))
 
     # ------------------------------------------------------------------
-    # innen helper: قراءة من الملفات المحلية
+    # Internal helper: read from local files
     # ------------------------------------------------------------------
     def _local_search(
         self,
@@ -68,13 +70,13 @@ class EgDrugsClient:
         fields: Optional[List[str]] = None,
     ) -> List[Drug]:
         """
-        بحث محلي في ملف SQLite باستخدام LIKE على الحقول المحددة.
+        Local search in the SQLite file using LIKE on the specified fields.
         """
         if fields is None:
             fields = ["name", "arabic", "active", "company"]
 
         if not self.db_path.exists():
-            raise FileNotFoundError(f"ملف SQLite غير موجود: {self.db_path}")
+            raise FileNotFoundError(f"SQLite file not found: {self.db_path}")
 
         like = f"%{query}%"
         conditions = " OR ".join(f"{f} LIKE ?" for f in fields)
@@ -99,7 +101,7 @@ class EgDrugsClient:
 
     def _local_get_by_id(self, drug_id: int) -> Optional[Drug]:
         if not self.db_path.exists():
-            raise FileNotFoundError(f"ملف SQLite غير موجود: {self.db_path}")
+            raise FileNotFoundError(f"SQLite file not found: {self.db_path}")
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
         try:
@@ -111,7 +113,7 @@ class EgDrugsClient:
 
     def _local_get_by_barcode(self, barcode: str) -> Optional[Drug]:
         if not self.db_path.exists():
-            raise FileNotFoundError(f"ملف SQLite غير موجود: {self.db_path}")
+            raise FileNotFoundError(f"SQLite file not found: {self.db_path}")
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
         try:
@@ -128,7 +130,7 @@ class EgDrugsClient:
         offset: int = 0,
     ) -> List[Drug]:
         if not self.db_path.exists():
-            raise FileNotFoundError(f"ملف SQLite غير موجود: {self.db_path}")
+            raise FileNotFoundError(f"SQLite file not found: {self.db_path}")
         like = f"%{active}%"
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
@@ -149,7 +151,7 @@ class EgDrugsClient:
 
     def _local_stats(self) -> Stats:
         if not self.db_path.exists():
-            raise FileNotFoundError(f"ملف SQLite غير موجود: {self.db_path}")
+            raise FileNotFoundError(f"SQLite file not found: {self.db_path}")
         conn = sqlite3.connect(str(self.db_path))
         try:
             cur = conn.cursor()
@@ -181,7 +183,7 @@ class EgDrugsClient:
             conn.close()
 
     # ------------------------------------------------------------------
-    # واجهة عامة
+    # Public interface
     # ------------------------------------------------------------------
     def search(
         self,
@@ -190,7 +192,7 @@ class EgDrugsClient:
         offset: int = 0,
     ) -> List[Drug]:
         """
-        بحث بالأسماء العربية أو الإنجليزية، المادة الفعالة، أو الشركة.
+        Search by name (Arabic/English), active ingredient, or company.
         """
         if self.base_url:
             data = self._fetch_json("/drugs/search", {"q": q, "limit": limit, "offset": offset})
@@ -198,14 +200,14 @@ class EgDrugsClient:
         return self._local_search(q, limit=limit, offset=offset)
 
     def get_by_id(self, drug_id: int) -> Optional[Drug]:
-        """جلب دواء بالمعرف الرقمي."""
+        """Get a drug by its numeric ID."""
         if self.base_url:
             data = self._fetch_json(f"/drugs/{drug_id}")
             return Drug.from_dict(data)
         return self._local_get_by_id(drug_id)
 
     def get_by_barcode(self, barcode: str) -> Optional[Drug]:
-        """جلب دواء برقم الباركود."""
+        """Get a drug by its barcode number."""
         if self.base_url:
             data = self._fetch_json(f"/drugs/barcode/{barcode}")
             return Drug.from_dict(data)
@@ -217,7 +219,7 @@ class EgDrugsClient:
         limit: int = 50,
         offset: int = 0,
     ) -> List[Drug]:
-        """إرجاع الأدوية التي تحتوي على نفس المادة الفعالة (بدائل/ج enerics)."""
+        """Return drugs containing the same active ingredient (generic alternatives)."""
         if self.base_url:
             data = self._fetch_json(
                 "/drugs/generics/" + active,
@@ -227,7 +229,7 @@ class EgDrugsClient:
         return self._local_get_generics(active, limit=limit, offset=offset)
 
     def stats(self) -> Stats:
-        """إحصائيات قاعدة البيانات."""
+        """Database statistics."""
         if self.base_url:
             data = self._fetch_json("/stats")
             return Stats.from_dict(data)
@@ -235,7 +237,7 @@ class EgDrugsClient:
 
 
 # ------------------------------------------------------------------
-# دوال مساعدة للاستخدام السريع بدون إنشاء عميل
+# Helper functions for quick use without creating a client
 # ------------------------------------------------------------------
 def _default_client() -> EgDrugsClient:
     return EgDrugsClient()
@@ -250,7 +252,7 @@ def search_by_active(active: str, limit: int = 50, offset: int = 0) -> List[Drug
 
 
 def search_by_company(company: str, limit: int = 50, offset: int = 0) -> List[Drug]:
-    # البحث عبر حقل الشركة باستخدام البحث العام
+    # Search using the company field via general search
     return _default_client().search(company, limit=limit, offset=offset)
 
 

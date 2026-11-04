@@ -1,5 +1,5 @@
 """
-نماذج بيانات (Data Models) لمكتبة eg-drugs.
+Data models for the eg-drugs library.
 """
 
 from dataclasses import dataclass, field
@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Any
 
 @dataclass
 class Drug:
-    """نموذج دواء واحد."""
+    """A single drug model."""
     id: int
     name: str
     arabic: str
@@ -64,7 +64,7 @@ class Drug:
 
 @dataclass
 class Stats:
-    """إحصائيات قاعدة البيانات."""
+    """Database statistics."""
     total_drugs: int
     unique_companies: int
     unique_categories: int
