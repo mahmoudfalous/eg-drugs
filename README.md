@@ -1,305 +1,76 @@
 # Egyptian Drug Database (`eg_drugs`)
 
-A clean, standardized, and continuously updated pharmaceutical database containing **27,617+ drugs marketed in Egypt**, including active ingredients, commercial names in Arabic and English, current and previous retail prices (`price` and `oldprice`), manufacturers, barcodes, and medical categories.
+A clean, standardized pharmaceutical database containing **27,617+ drugs marketed in Egypt**, including active ingredients, commercial names in Arabic and English, current and previous retail prices, manufacturers, barcodes, and medical categories.
 
-All files are located in the `data/` directory and available in **CSV**, **JSON**, **SQLite**, and **SQL dump** formats.
-
-
----
-
-## Files Overview
-
-| File | Format | Size | Description |
-| :--- | :--- | :--- | :--- |
-| **`data/eg_drugs.csv`** | CSV (UTF-8) | ~8.1 MB | Comma-separated tabular data for Pandas, Excel, or ETL pipelines. |
-| **`data/eg_drugs.json`** | JSON Array | ~16 MB | Array of drug objects for web, mobile, and API runtimes. |
-| **`data/eg_drugs.sqlite`** | SQLite DB | ~13 MB | Relational SQLite database with built-in indexes on `name`, `arabic`, `active`, and `barcode`. |
-| **`data/eg_drugs.sql`** | SQL Dump | ~9.7 MB | Standard SQL DDL & `INSERT` statements compatible with SQLite, PostgreSQL, and MySQL. |
+Available in **CSV**, **JSON**, **SQLite**, and **SQL dump** formats under `data/`.
 
 ---
 
-## Schema Definition
+## 🚀 Added in this fork
 
-All formats share the exact same schema structure:
-
-| Field Name | Type (SQL / CSV) | Type (JSON) | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | INTEGER PRIMARY KEY | Integer | Unique identifier for each drug record. |
-| `name` | TEXT | String | Commercial/Brand name of the drug in English. |
-| `arabic` | TEXT | String | Commercial/Brand name of the drug in Arabic. |
-| `active` | TEXT | String | Active pharmaceutical ingredients/compounds. |
-| `company` | TEXT | String | Manufacturing or distributing pharmaceutical company. |
-| `price` | TEXT | String | Current retail price in EGP. |
-| `oldprice` | TEXT | String | Previous retail price in EGP (for tracking price updates). |
-| `barcode` | TEXT | String | Barcode number (EAN/GTIN). |
-| `barcode_valid` | TEXT (0/1) | String ("0"/"1") | GS1 checksum validation flag (`1` = valid GTIN, `0` = invalid/absent). |
-| `slug` | TEXT | String | URL-friendly slug identifier. |
-| `units` | TEXT | String | Number of packaging units / pack size. |
-| `description` | TEXT | String | Category classification (e.g., `cold products`, `antineoplastic`). |
-| `uses` | TEXT | String | Indications and therapeutic usage in Arabic. |
+| Component | Path | Description |
+|-----------|------|-------------|
+| REST API | `api/main.py` | FastAPI search API for drugs, barcodes, and generics |
+| Web UI | `web/index.html` | Arabic search interface |
+| Python SDK | `sdk/python/eg_drugs` | Python library for programmatic access |
+| Node.js SDK | `sdk/node/eg-drugs` | Node.js library for programmatic access |
+| Data quality tools | `tools/` | Barcode validation, duplicate detection, price anomaly checks |
+| Price tracking | `tools/price_tracker.py` | Compare drug prices between data versions |
+| Export formats | `tools/export_formats.py` | Export to Excel (.xlsx) and Parquet (.parquet) |
+| CI | `.github/workflows/` | GitHub Actions for build/tests/data quality |
 
 ---
 
-## Data Samples
-
-### JSON Record (`data/eg_drugs.json`)
-
-```json
-{
-  "id": 1,
-  "name": "1 2 3 (one two three) syrup 120 ml",
-  "arabic": "ون تو ثري شراب 120 مل",
-  "active": "chlorpheniramine+paracetamol+pseudoephedrine",
-  "company": "hikma pharma",
-  "price": "40",
-  "oldprice": "32",
-  "barcode": "6221000003295",
-  "slug": "1-2-3--one-two-three--syrup-120-ml",
-  "units": "1",
-  "description": "cold products",
-  "uses": "تخفيف أعراض نزلات البرد والإنفلونزا مثل الصداع وارتفاع درجة الحرارة...",
-  "barcode_valid": "1"
-}
-```
-
----
-
-## Free Public Search API (v1)
-
-A hosted, sub-10ms REST search API is available at:
-**`https://eg-drugs-api.mahmoudfalous.workers.dev/`**
-
-### Rate Limits & Policies
-* **Rate Limit**: **60 requests / minute per IP** (sliding window).
-* **CORS**: Fully enabled (`Access-Control-Allow-Origin: *`) for web and mobile clients.
-* **Headers returned**:
-  * `RateLimit-Limit: 60`
-  * `RateLimit-Remaining: <remaining_requests>`
-  * `RateLimit-Reset: <seconds_until_window_reset>`
-
-### Endpoints Overview
-
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/v1/search` | `GET` | Paginated search across English, Arabic, active ingredients, and barcodes. |
-| `/v1/drugs/{id}` | `GET` | Retrieve a drug record by ID. |
-| `/v1/barcode/{barcode}` | `GET` | Direct lookup by barcode (GTIN / EAN). |
-
----
-
-### Query Parameters for `/v1/search`
-
-| Parameter | Type | Required | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `q` | String | **Yes** | — | Search term (e.g., `concor`, `باراسيتامول`, `6221000003295`). Character `%` is not allowed. |
-| `page` | Integer | No | `1` | Page number ($\ge 1$). |
-| `limit` | Integer | No | `20` | Results per page ($1 \le \text{limit} \le 100$). |
-
----
-
-### Complete Response Examples
-
-#### 1. Search Query with Pagination (`GET /v1/search?q=concor&page=1&limit=2`)
+## 🔌 REST API
 
 ```bash
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/v1/search?q=concor&page=1&limit=2"
+pip install -r api/requirements.txt
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-```json
-{
-  "query": "concor",
-  "pagination": {
-    "page": 1,
-    "limit": 2,
-    "total_results": 32,
-    "total_pages": 16,
-    "has_next": true,
-    "has_prev": false
-  },
-  "results": [
-    {
-      "id": 2973,
-      "name": "concor 10mg 30 f.c. tablets",
-      "arabic": "كونكور 10مجم 30 قرص",
-      "active": "bisoprolol fumarate",
-      "company": "amoun > merck kgaa f.r.germany",
-      "price": "99",
-      "oldprice": "70.5",
-      "barcode": "6221025032362",
-      "barcode_valid": "1",
-      "slug": "concor-10mg-30-f.c.-tablets",
-      "units": "3",
-      "description": "antihypertensive.beta blocker.selective b1",
-      "uses": "لمرضى ضغط الدم المرتفع"
-    },
-    {
-      "id": 2974,
-      "name": "concor plus 10/25mg 30 f.c. tablets",
-      "arabic": "كونكور  بلس 10/25مجم 30 قرص",
-      "active": "bisoprolol fumarate+hydrochlorothiazide",
-      "company": "amoun > merck kgaa f.r.germany",
-      "price": "108",
-      "oldprice": "79.5",
-      "barcode": "6221025032379",
-      "barcode_valid": "1",
-      "slug": "concor-plus-10-25mg-30-f.c.-tablets",
-      "units": "3",
-      "description": "antihypertensive.combined beta blocker with diuretic",
-      "uses": "علاج ارتفاع ضغط الدم"
-    }
-  ]
-}
-```
+Interactive docs: `http://localhost:8000/docs`
 
-#### 2. Get Drug by ID (`GET /v1/drugs/1`)
-
-```bash
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/v1/drugs/1"
-```
-
-```json
-{
-  "id": 1,
-  "name": "1 2 3 (one two three) syrup 120 ml",
-  "arabic": "ون تو ثري شراب 120 مل",
-  "active": "chlorpheniramine+paracetamol+pseudoephedrine",
-  "company": "hikma pharma",
-  "price": "40",
-  "oldprice": "32",
-  "barcode": "6221000003295",
-  "barcode_valid": "1",
-  "slug": "1-2-3--one-two-three--syrup-120-ml",
-  "units": "1",
-  "description": "cold products",
-  "uses": "تخفيف أعراض نزلات البرد والإنفلونزا مثل الصداع وارتفاع درجة الحرارة..."
-}
-```
-
-#### 3. Lookup by Barcode (`GET /v1/barcode/6221000003295`)
-
-```bash
-curl -s "https://eg-drugs-api.mahmoudfalous.workers.dev/v1/barcode/6221000003295"
-```
-
-#### 4. Error Responses
-
-* **`400 Bad Request` (Missing Parameter)**:
-  ```json
-  {
-    "error": {
-      "code": "MISSING_QUERY",
-      "message": "Query parameter 'q' is required. Example: /v1/search?q=concor",
-      "status": 400
-    }
-  }
-  ```
-
-* **`404 Not Found` (Resource Not Found)**:
-  ```json
-  {
-    "error": {
-      "code": "DRUG_NOT_FOUND",
-      "message": "Drug with ID 999999 was not found.",
-      "status": 404
-    }
-  }
-  ```
-
-* **`429 Too Many Requests` (Rate Limit Exceeded)**:
-  ```json
-  {
-    "error": {
-      "code": "RATE_LIMIT_EXCEEDED",
-      "message": "Rate limit exceeded. Maximum 60 requests per minute per IP.",
-      "status": 429
-    }
-  }
-  ```
+Key endpoints:
+- `GET /drugs/search?q=keyword` — search drugs
+- `GET /drugs/{id}` — get drug by ID
+- `GET /drugs/barcode/{barcode}` — get drug by barcode
+- `GET /drugs/generics/{active}` — generic alternatives (same active ingredient)
+- `GET /stats` — database statistics
+- `GET /health` — health check
 
 ---
 
-## Loading and Usage Guidelines
+## 📦 SDKs
 
-### 1. SQLite Database (`data/eg_drugs.sqlite`)
-
-The SQLite database includes pre-built indexes for instant lookups by English name, Arabic name, active ingredient, or barcode:
-
+**Python:**
+```bash
+pip install -e sdk/python/eg_drugs
+```
 ```python
-import sqlite3
-
-conn = sqlite3.connect("data/eg_drugs.sqlite")
-cursor = conn.cursor()
-
-# Search by active ingredient
-cursor.execute(
-    "SELECT name, arabic, price, company FROM eg_drugs WHERE active LIKE ? LIMIT 5",
-    ("%paracetamol%",),
-)
-for row in cursor.fetchall():
-    print(row)
+from eg_drugs import search
+results = search("panadol", limit=5)
 ```
 
-Command line quick query:
+**Node.js:**
 ```bash
-sqlite3 data/eg_drugs.sqlite "SELECT name, price FROM eg_drugs WHERE name LIKE '%concor%' LIMIT 5;"
+cd sdk/node/eg-drugs && npm install
+```
+```js
+const { search } = require('eg-drugs');
+const results = await search('panadol', { limit: 5 });
 ```
 
 ---
 
-### 2. Standard SQL Dump (`data/eg_drugs.sql`)
+## 🛠️ Tools
 
-Import directly into PostgreSQL, MySQL, or SQLite:
-
-```bash
-# SQLite
-sqlite3 my_database.sqlite < data/eg_drugs.sql
-
-# PostgreSQL
-psql -d my_database -f data/eg_drugs.sql
-
-# MySQL
-mysql -u root -p my_database < data/eg_drugs.sql
-```
+- `tools/data_quality.py` — data quality report (missing fields, duplicates, price anomalies, barcode validation)
+- `tools/price_tracker.py` — track price changes between data versions
+- `tools/export_formats.py` — export to Excel/Parquet
 
 ---
 
-### 3. Python (CSV / Pandas)
+## 📄 License
 
-```python
-import pandas as pd
-
-df = pd.read_csv("data/eg_drugs.csv")
-print(f"Total drugs: {len(df)}")
-
-# Filter drugs by company
-hikma_drugs = df[df["company"].str.contains("hikma", case=False, na=False)]
-print(hikma_drugs[["name", "price", "active"]].head())
-```
-
----
-
-### 4. JavaScript / Node.js (JSON)
-
-```javascript
-const fs = require('fs');
-
-const drugs = JSON.parse(fs.readFileSync('data/eg_drugs.json', 'utf8'));
-console.log(`Loaded ${drugs.length} drugs.`);
-
-const aspirin = drugs.filter(d => d.name.toLowerCase().includes('aspirin'));
-console.log(`Found ${aspirin.length} aspirin products.`);
-```
-
----
-
-## License & Attribution
-
-* **Dataset / Database (`data/`)**: Licensed under [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE-DATA). Free for both **commercial and non-commercial** use with attribution.
-* **Code & Tooling**: Licensed under the [MIT License](LICENSE-MIT).
-* **Attribution**: If you use this database in your app, website, or research, please cite:
-  > *Egyptian Drug Database (`eg-drugs`) by Mahmoud Mohamed (https://github.com/mahmoudfalous/eg-drugs)*
-* **Updates**: Continuously updated via automated synchronization pipelines.
-* **Contact**: [mahmoudfalous@gmail.com](mailto:mahmoudfalous@gmail.com).
-
-  [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=github)](https://github.com/sponsors/mahmoudfalous)
-
+Code: MIT License (`LICENSE-MIT`)
+Data: CC-BY-4.0 (`LICENSE-DATA`)
