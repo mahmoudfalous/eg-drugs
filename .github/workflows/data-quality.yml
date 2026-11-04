@@ -26,23 +26,22 @@ jobs:
       - name: Run data quality checks
         run: |
           python tools/data_quality.py --db data/eg_drugs.sqlite --report quality-report.json
-          echo "--- تقرير الجودة ---"
+          echo "--- Data quality report ---"
           cat quality-report.json | python3 -c "
 import sys,json
 r=json.load(sys.stdin)
-print('إجمالي السجلات:', r['total_records'])
-print('المشاكل الإجمالية:', r['summary']['total_issues'])
-print('حقول ناقصة:', r['summary']['missing_fields_count'])
-print('مجموعات مكررة:', r['summary']['duplicate_groups_count'])
-print('تغيرات أسعار:', r['summary']['price_anomalies_count'])
-print('مشاكل باركود:', r['summary']['barcode_issues_count'])
+print('Total records:', r['total_records'])
+print('Total issues:', r['summary']['total_issues'])
+print('Missing fields:', r['summary']['missing_fields_count'])
+print('Duplicate groups:', r['summary']['duplicate_groups_count'])
+print('Price anomalies:', r['summary']['price_anomalies_count'])
+print('Barcode issues:', r['summary']['barcode_issues_count'])
 "
-          # فشلければ 실패하면 액션 fails (إذا وجدت مشاكل حرجة)
+          # Notify if issues found (do not fail the build automatically)
           python3 -c "
 import json
 r=json.load(open('quality-report.json'))
 if r['summary']['total_issues'] > 0:
-    print('تحذير: توجد مشاكل في جودة البيانات تتطلب المراجعة.')
-    # لا نفشل البناء تلقائياً، بل ننبه فقط
+    print('Warning: data quality issues found that require review.')
 "
-          echo "فحص الجودة اكتمل."
+          echo "Data quality check completed."

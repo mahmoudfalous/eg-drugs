@@ -1,22 +1,22 @@
 """
-تحقق من صحة الباركود (GS1 / EAN-13) لقاعدة بيانات الأدوية المصرية.
+Barcode validation (GS1 / EAN-13) for the Egyptian Drug Database.
 
-خوارزمية GS1 Check Digit لـ EAN-13:
-- من اليسار إلى اليمين، الأرقام في المواقع الفردية (الرقم الأول، الثالث، ...) تُضرب بـ 1
-- الأرقام في المواقع الزوجية (الثاني، الرابع، ...) تُضرب بـ 3
-- يُجمع الناتج، ورقم التحقق = (10 - (المجموع % 10)) % 10
-- إذا تطابق رقم التحقق مع آخر رقم في الباركود → الباركود صالح
+GS1 Check Digit algorithm for EAN-13:
+- From left to right, digits at odd positions (1st, 3rd, ...) are multiplied by 1
+- Digits at even positions (2nd, 4th, ...) are multiplied by 3
+- Sum the results, check digit = (10 - (sum % 10)) % 10
+- If the check digit matches the last barcode digit, the barcode is valid
 """
 
 from typing import Tuple
 
 
 def gs1_check_digit(digits_without_check: str) -> int:
-    """حساب رقم التحقق GS1 لسلسلة أرقام (بدون رقم التحقق الأخير)."""
+    """Calculate GS1 check digit for a digit string (without the last check digit)."""
     total = 0
     for i, ch in enumerate(digits_without_check):
         d = int(ch)
-        # من اليسار: المواقع الزوجية (0-indexed) تُضرب بـ 1، الفردية بـ 3
+        # From left: even positions (0-indexed) multiply by 1, odd by 3
         multiplier = 1 if i % 2 == 0 else 3
         total += d * multiplier
     return (10 - (total % 10)) % 10
@@ -24,34 +24,34 @@ def gs1_check_digit(digits_without_check: str) -> int:
 
 def validate_ean13(barcode: str) -> Tuple[bool, str]:
     """
-    التحقق من صحة باركود EAN-13.
-    يعيد (صالح، رسالة).
+    Validate an EAN-13 barcode.
+    Returns (is_valid, message).
     """
     if not barcode or not barcode.isdigit():
-        return False, "الباركود فارغ أو يحتوي على أرقام غير صالحة"
+        return False, "Barcode is empty or contains invalid digits"
 
     if len(barcode) != 13:
-        return False, f"طول الباركود {len(barcode)} رقم، المطلوب 13 رقماً"
+        return False, f"Barcode length is {len(barcode)} digits, 13 required"
 
     body = barcode[:12]
     check_digit = int(barcode[12])
     expected = gs1_check_digit(body)
 
     if check_digit == expected:
-        return True, "باركود صالح"
-    return False, f"رقم التحقق غير صحيح (المتوقع: {expected}، الموجود: {check_digit})"
+        return True, "Barcode is valid"
+    return False, f"Check digit incorrect (expected: {expected}, found: {check_digit})"
 
 
 def validate_barcode_any(barcode: str) -> Tuple[bool, str]:
     """
-    التحقق من أي باركود. إذا كان طول 13 يُطبق GS1/EAN-13،
-    وإلا يُفحص فقط أن يكون رقمياً وغير فارغ.
+    Validate any barcode. If length is 13, apply GS1/EAN-13;
+    otherwise just check that it is numeric and non-empty.
     """
     if not barcode or not barcode.strip():
-        return False, "الباركود فارغ"
+        return False, "Barcode is empty"
     barcode = barcode.strip()
     if not barcode.isdigit():
-        return False, "الباركود يحتوي على حروف غير رقمية"
+        return False, "Barcode contains non-digit characters"
     if len(barcode) == 13:
         return validate_ean13(barcode)
-    return True, f"باركود رقمي بطول {len(barcode)} (لم يُطبق GS1 لطول غير 13)"
+    return True, f"Numeric barcode of length {len(barcode)} (GS1 not applied for non-13 length)"

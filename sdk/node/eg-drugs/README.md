@@ -1,77 +1,77 @@
 # eg-drugs Node.js SDK
 
-مكتبة Node.js للوصول إلى قاعدة بيانات الأدوية المصرية (**eg-drugs**) — 27,617+ دواء marketed في مصر.
+Node.js library for accessing the Egyptian Drug Database (**eg-drugs**) — 27,617+ drugs.
 
-## التثبيت
+## Install
 
 ```bash
 npm install
 ```
-(داخل مجلد `sdk/node/eg-drugs`)
+(inside the `sdk/node/eg-drugs` folder)
 
-أو مباشرة من GitHub:
+Or directly from GitHub:
 
 ```bash
 npm install git+https://github.com/abduallahJamal/eg-drugs.git#subdirectory=sdk/node/eg-drugs
 ```
 
-## الاستخدام السريع
+## Quick start
 
 ```js
 const { search, getById, getByBarcode, getGenerics, loadStats } = require('eg-drugs');
 
-// بحث بالاسم (عربي أو إنجليزي)
+// Search by name (English or Arabic)
 const results = await search('panadol', { limit: 5 });
 for (const drug of results) {
-  console.log(drug.arabic, '-', drug.price, 'ج.م');
+  console.log(drug.arabic, '-', drug.price);
 }
 
-// جلب دواء بالمعرف
+// Get drug by ID
 const drug = await getById(1);
 console.log(drug.arabic, drug.active);
 
-// جلب دواء بالباركود
+// Get drug by barcode
 const drug2 = await getByBarcode('6221000003295');
 console.log(drug2.name, drug2.company);
 
-// الأدوية البديلة (نفس المادة الفعالة)
+// Generic alternatives (same active ingredient)
 const generics = await getGenerics('paracetamol', { limit: 10 });
 for (const g of generics) {
   console.log(g.arabic, g.price);
 }
 
-// إحصائيات قاعدة البيانات
+// Database statistics
 const stats = await loadStats();
-console.log(`إجمالي الأدوية: ${stats.totalDrugs.toLocaleString()}`);
-console.log(`الشركات: ${stats.uniqueCompanies}`);
-console.log(`المواد الفعالة: ${stats.uniqueActiveIngredients}`);
+console.log(`Total drugs: ${stats.totalDrugs.toLocaleString()}`);
+console.log(`Companies: ${stats.uniqueCompanies}`);
+console.log(`Active ingredients: ${stats.uniqueActiveIngredients}`);
 ```
 
-## العمل مع واجهة برمجة التطبيقات (API) عن بعد
+## Remote API
 
 ```js
 const { EgDrugsClient } = require('eg-drugs');
 
 const client = new EgDrugsClient({ baseUrl: 'https://api.example.com' });
-const results = await client.search('بانادول', { limit: 10 });
+const results = await client.search('panadol', { limit: 10 });
 ```
 
-## العمل مع الملفات المحلية
+## Local files
 
-بشكل افتراضي، تبحث المكتبة في ملف `data/eg_drugs.sqlite` الموجود في المستودع.
-يمكنك تحديد مسار مخصص:
+By default, the library searches `data/eg_drugs.sqlite` in the repository.
+You can pass a custom path:
 
 ```js
 const client = new EgDrugsClient({ dbPath: '/path/to/eg_drugs.sqlite' });
 const results = await client.search('panadol');
 ```
 
-## المتطلبات
+## Requirements
 
 - Node.js >= 18
-- أمر `sqlite3` سطر الأوامر مثبت على النظام (للعمل المحلي السريع).
-  إذا لم يكن مثبتًا، تعود المكتبة تلقائيًا إلى قراءة ملف JSON.
+- `sqlite3` CLI installed on the system (for fast local operation).
+  If not installed, the library falls back to reading the JSON file.
 
-## الترخيص
+## License
 
-MIT License — راجع ملف `LICENSE-MIT` في جذر المستودع.
+MIT License — see `LICENSE-MIT` in the repository root.

@@ -1,12 +1,12 @@
 """
 eg-drugs Python SDK
 ===================
-مكتبة Python للوصول إلى قاعدة بيانات الأدوية المصرية (eg-drugs).
+Python library for accessing the Egyptian Drug Database (eg-drugs).
 
-البحث بالأسماء العربية أو الإنجليزية، المادة الفعالة، الشركة، أو الباركود،
-وإيجاد الأدوية البديلة (نفس المادة الفعالة).
+Search drugs by name (Arabic/English), active ingredient, company, or barcode,
+and find generic alternatives (same active ingredient).
 
-مثال سريع:
+Quick example:
     from eg_drugs import search, get_by_id, get_by_barcode, get_generics
 
     results = search("panadol", limit=5)

@@ -1,12 +1,12 @@
 /**
  * eg-drugs Node.js SDK
  * ====================
- * مكتبة Node.js للوصول إلى قاعدة بيانات الأدوية المصرية (eg-drugs).
+ * Node.js library for accessing the Egyptian Drug Database (eg-drugs).
  *
- * البحث بالأسماء العربية أو الإنجليزية، المادة الفعالة، الشركة، أو الباركود،
- * وإيجاد الأدوية البديلة (نفس المادة الفعالة).
+ * Search drugs by name (Arabic/English), active ingredient, company, or barcode,
+ * and find generic alternatives (same active ingredient).
  *
- * مثال سريع:
+ * Quick example:
  *   const { search, getById, getByBarcode, getGenerics, loadStats } = require('eg-drugs');
  *
  *   const results = await search('panadol', { limit: 5 });
@@ -29,8 +29,8 @@ const DEFAULT_JSON_PATH = path.resolve(
 );
 
 /**
- * عميل eg-drugs لـ Node.js.
- * يدعم العمل محليًا (ملف SQLite أو JSON) أو عن بعد عبر واجهة برمجة التطبيقات.
+ * eg-drugs client for Node.js.
+ * Supports local operation (SQLite or JSON file) or remote API access.
  */
 class EgDrugsClient {
   constructor({ baseUrl, dbPath, jsonPath } = {}) {
@@ -41,13 +41,13 @@ class EgDrugsClient {
   }
 
   /**
-   * استدعاء واجهة API عن بعد وإرجاع JSON.
+   * Call remote API and return JSON.
    * @private
    */
   async _fetchJson(apiPath, params = {}) {
     if (!this.baseUrl) {
       throw new Error(
-        "baseUrl غير محدد. يرجى تمريره عند إنشاء العميل أو استخدام الملفات المحلية."
+        "baseUrl is not set. Pass it when creating the client or use local files."
       );
     }
     const qs = new URLSearchParams(params).toString();
@@ -60,20 +60,20 @@ class EgDrugsClient {
   }
 
   /**
-   * قراءة جميع السجلات من ملف JSON محلي (مع التخزين المؤقت).
+   * Load all records from a local JSON file (with caching).
    * @private
    */
   _loadJson() {
     if (this._jsonCache) return this._jsonCache;
     if (!fs.existsSync(this.jsonPath)) {
-      throw new Error(`ملف JSON غير موجود: ${this.jsonPath}`);
+      throw new Error(`JSON file not found: ${this.jsonPath}`);
     }
     this._jsonCache = JSON.parse(fs.readFileSync(this.jsonPath, "utf8"));
     return this._jsonCache;
   }
 
   /**
-   * تشغيل استعلام sqlite3 عبر سطر الأوامر، مع fallback إلى JSON إذا لم يكن sqlite3 مثبتاً.
+   * Run a sqlite3 query via CLI, with fallback to JSON if sqlite3 is not installed.
    * @private
    */
   _runSqlite(sql) {
@@ -84,13 +84,13 @@ class EgDrugsClient {
       });
       return JSON.parse(out);
     } catch (e) {
-      // sqlite3 غير مثبت أو فشل -> fallback إلى JSON
+      // sqlite3 not installed or failed -> fallback to JSON
       return null;
     }
   }
 
   /**
-   * تحويل سجل إلى كائن موحد.
+   * Normalize a row into a consistent object.
    * @private
    */
   _normalizeRow(row) {
@@ -112,7 +112,7 @@ class EgDrugsClient {
   }
 
   /**
-   * فلترة السجلات من JSON وفق كلمة بحث.
+   * Filter records from JSON by search keyword.
    * @private
    */
   _filterJson(query, { limit, offset } = {}) {
@@ -130,7 +130,7 @@ class EgDrugsClient {
   }
 
   /**
-   * بحث بالأسماء العربية أو الإنجليزية، المادة الفعالة، أو الشركة.
+   * Search by name (Arabic/English), active ingredient, or company.
    */
   async search(q, { limit = 20, offset = 0 } = {}) {
     if (this.baseUrl) {
@@ -145,7 +145,7 @@ class EgDrugsClient {
   }
 
   /**
-   * جلب دواء بالمعرف الرقمي.
+   * Get a drug by its numeric ID.
    */
   async getById(id) {
     const numericId = Number(id);
@@ -165,7 +165,7 @@ class EgDrugsClient {
   }
 
   /**
-   * جلب دواء برقم الباركود.
+   * Get a drug by its barcode number.
    */
   async getByBarcode(barcode) {
     if (this.baseUrl) {
@@ -184,7 +184,7 @@ class EgDrugsClient {
   }
 
   /**
-   * إرجاع الأدوية التي تحتوي على نفس المادة الفعالة (بدائل/ج enerics).
+   * Return drugs containing the same active ingredient (generic alternatives).
    */
   async getGenerics(active, { limit = 50, offset = 0 } = {}) {
     if (this.baseUrl) {
@@ -208,7 +208,7 @@ class EgDrugsClient {
   }
 
   /**
-   * إحصائيات قاعدة البيانات.
+   * Database statistics.
    */
   async loadStats() {
     if (this.baseUrl) {
@@ -234,14 +234,14 @@ class EgDrugsClient {
 }
 
 /**
- * إنشاء عميل افتراضي يعمل مع الملفات المحلية في المستودع.
+ * Create a default client that works with local files in the repository.
  */
 function createClient(options = {}) {
   return new EgDrugsClient(options);
 }
 
 /**
- * دوال مساعدة للاستخدام السريع.
+ * Helper functions for quick use.
  */
 async function search(q, options = {}) {
   return createClient().search(q, options);
