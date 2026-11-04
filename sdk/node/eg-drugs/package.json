@@ -1,0 +1,21 @@
+{
+  "name": "eg-drugs",
+  "version": "1.0.0",
+  "description": "Node.js SDK for the Egyptian Drug Database (eg-drugs) - 27,617+ drugs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": ["egypt", "drugs", "pharmaceutical", "database", "eg-drugs"],
+  "author": "Abduallah Jamal <abduallahjamal@users.noreply.github.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abduallahJamal/eg-drugs.git",
+    "directory": "sdk/node/eg-drugs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
