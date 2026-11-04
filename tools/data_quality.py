@@ -1,16 +1,16 @@
 """
-أدوات جودة البيانات لقاعدة بيانات الأدوية المصرية (eg-drugs).
+Data quality tools for the Egyptian Drug Database (eg-drugs).
 
-الفحوصات المضمنة:
-1. السجلات الناقصة الحقول الأساسية (name, arabic, active, price)
-2. السجلات المكررة (حسب الاسم العربي أو الباركود)
-3. اختلافات الأسعار (price vs oldprice) بنسب كبيرة
-4. صحة الباركود (GS1 / EAN-13)
-5. قيم غير صالحة في حقل barcode_valid
+Included checks:
+1. Records missing required fields (name, arabic, active, price)
+2. Duplicate records (by Arabic name or barcode)
+3. Large price differences (price vs oldprice)
+4. Barcode validity (GS1 / EAN-13)
+5. Invalid barcode_valid field values
 
-يخرج تقرير بصيغة JSON إلى stdout أو ملف مخرج.
+Outputs a JSON report to stdout or an output file.
 
-تشغيل:
+Usage:
     python tools/data_quality.py --db data/eg_drugs.sqlite --report report.json
 """
 
@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-# استيراد دالة التحقق من الباركود من الملف المجاور
+# Import barcode validation function from the adjacent file
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_barcodes import validate_barcode_any  # noqa: E402
 
@@ -39,7 +39,7 @@ def connect(db_path: Path) -> sqlite3.Connection:
 
 
 def check_missing_fields(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
-    """السجلات التي تفتقر إلى أحد الحقول الأساسية."""
+    """Records missing one of the required fields."""
     issues: List[Dict[str, Any]] = []
     for field in REQUIRED_FIELDS:
         cur = conn.execute(
@@ -60,10 +60,10 @@ def check_missing_fields(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
 
 
 def check_duplicates(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
-    """السجلات المكررة حسب الاسم العربي أو الباركود."""
+    """Duplicate records by Arabic name or barcode."""
     issues: List[Dict[str, Any]] = []
 
-    # مكررات الاسم العربي
+    # Duplicate Arabic names
     cur = conn.execute(
         """
         SELECT arabic, COUNT(*) as c, GROUP_CONCAT(id) as ids
@@ -87,7 +87,7 @@ def check_duplicates(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
             }
         )
 
-    # مكررات الباركود (فقط الباركود غير الفارغ والصحيح الشكل)
+    # Duplicate barcodes (non-empty, non-zero barcodes only)
     cur = conn.execute(
         """
         SELECT barcode, COUNT(*) as c, GROUP_CONCAT(id) as ids
@@ -114,8 +114,10 @@ def check_duplicates(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
     return issues
 
 
-def check_price_anomalies(conn: sqlite3.Connection, threshold_pct: float = 50.0) -> List[Dict[str, Any]]:
-    """اكتشاف اختلافات كبيرة في الأسعار بين price و oldprice."""
+def check_price_anomalies(
+    conn: sqlite3.Connection, threshold_pct: float = 50.0
+) -> List[Dict[str, Any]]:
+    """Detect large price differences between price and oldprice."""
     issues: List[Dict[str, Any]] = []
     cur = conn.execute(
         """
@@ -151,7 +153,7 @@ def check_price_anomalies(conn: sqlite3.Connection, threshold_pct: float = 50.0)
 
 
 def check_barcodes(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
-    """التحقق من صحة الباركود وحقل barcode_valid."""
+    """Validate barcodes and the barcode_valid field."""
     issues: List[Dict[str, Any]] = []
     cur = conn.execute(
         "SELECT id, name, arabic, barcode, barcode_valid FROM eg_drugs WHERE barcode IS NOT NULL AND barcode != ''"
@@ -162,7 +164,7 @@ def check_barcodes(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
 
         is_valid, message = validate_barcode_any(barcode)
 
-        # إذا كان الباركود طول 13 وغير صالح GS1
+        # If barcode is 13 digits and not valid GS1
         if len(barcode) == 13 and not is_valid:
             issues.append(
                 {
@@ -176,7 +178,7 @@ def check_barcodes(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
                 }
             )
 
-        # تناقض بين حقل barcode_valid والحقيقة
+        # Inconsistency between barcode_valid field and reality
         if len(barcode) == 13:
             expected_valid = "1" if is_valid else "0"
             if valid_flag != expected_valid:
@@ -197,7 +199,7 @@ def check_barcodes(conn: sqlite3.Connection) -> List[Dict[str, Any]]:
 
 
 def run_all_checks(db_path: Path, threshold_pct: float = 50.0) -> Dict[str, Any]:
-    """تشغيل جميع فحوصات الجودة وإرجاع التقرير."""
+    """Run all quality checks and return the report."""
     conn = connect(db_path)
     try:
         total = conn.execute("SELECT COUNT(*) FROM eg_drugs").fetchone()[0]
@@ -215,7 +217,7 @@ def run_all_checks(db_path: Path, threshold_pct: float = 50.0) -> Dict[str, Any]
         )
         report["checks"]["barcodes"] = check_barcodes(conn)
 
-        # ملخص
+        # Summary
         summary = {
             "missing_fields_count": len(report["checks"]["missing_fields"]),
             "duplicate_groups_count": len(report["checks"]["duplicates"]),
@@ -231,30 +233,30 @@ def run_all_checks(db_path: Path, threshold_pct: float = 50.0) -> Dict[str, Any]
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="فحص جودة بيانات eg-drugs (البطاقات، المكررات، الأسعار، الحقول الناقصة)"
+        description="Check eg-drugs data quality (barcodes, duplicates, prices, missing fields)"
     )
     parser.add_argument(
         "--db",
         type=Path,
         default=DEFAULT_DB_PATH,
-        help="مسار ملف SQLite (الافتراضي: data/eg_drugs.sqlite)",
+        help="Path to SQLite file (default: data/eg_drugs.sqlite)",
     )
     parser.add_argument(
         "--report",
         type=Path,
         default=None,
-        help="مسار ملف تقرير JSON للمخرج (الافتراضي: stdout)",
+        help="Path to output JSON report file (default: stdout)",
     )
     parser.add_argument(
         "--price-threshold",
         type=float,
         default=50.0,
-        help="عتبة نسبة التغيير في السعر للإبلاغ عنها (الافتراضي: 50%)",
+        help="Price change percentage threshold for reporting (default: 50%)",
     )
     args = parser.parse_args()
 
     if not args.db.exists():
-        print(f"خطأ: ملف قاعدة البيانات غير موجود: {args.db}", file=sys.stderr)
+        print(f"Error: database file not found: {args.db}", file=sys.stderr)
         sys.exit(1)
 
     report = run_all_checks(args.db, threshold_pct=args.price_threshold)
@@ -262,7 +264,7 @@ def main() -> None:
     output = json.dumps(report, ensure_ascii=False, indent=2)
     if args.report:
         args.report.write_text(output, encoding="utf-8")
-        print(f"تم حفظ التقرير في: {args.report}")
+        print(f"Report saved to: {args.report}")
     else:
         print(output)
 
