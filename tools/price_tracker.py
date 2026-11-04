@@ -1,14 +1,15 @@
 """
-تتبع تغييرات الأسعار في قاعدة بيانات الأدوية المصرية.
+Track price changes in the Egyptian Drug Database.
 
-يقارن بين إصدارين من بيانات الأدوية (الحالي والسابق) وينتج تقريراً
-بجميع الأدوية التي تغيرت أسعارها، مع نسبة التغيير والاتجاه (زيادة/نقصان).
+Compares two versions of drug data (current and previous) and produces a report
+of all drugs whose prices changed, with the change percentage and direction
+(increase/decrease).
 
-المخرجات:
-- data/price_changes.json: قائمة بجميع الأدوية التي تغيرت أسعارها
-- data/price_changes_summary.json: إحصائيات مجمعة
+Outputs:
+- data/price_changes.json: list of all drugs with changed prices
+- data/price_changes_summary.json: aggregated statistics
 
-تشغيل:
+Usage:
     python tools/price_tracker.py --current data/eg_drugs.json --previous data/eg_drugs_previous.json
 """
 
@@ -41,8 +42,8 @@ def track_price_changes(
     previous: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     """
-    يقارن بين إصدارين ويقارن تغييرات الأسعار.
-    يعيد قائمة بالأدوية التي تغيرت أسعارها مع تفاصيل التغيير.
+    Compare two versions and return a list of drugs with changed prices,
+    including change details.
     """
     prev_index = index_by_id(previous)
     changes: List[Dict[str, Any]] = []
@@ -51,15 +52,15 @@ def track_price_changes(
         curr_id = int(curr.get("id", 0))
         prev = prev_index.get(curr_id)
         if not prev:
-            continue  # دواء جديد في الإصدار الحالي
+            continue  # new drug in current version
 
         curr_price = curr.get("price")
         prev_price = prev.get("price")
 
         if curr_price == prev_price:
-            continue  # لا تغيير
+            continue  # no change
 
-        # أحد السعرين فارغ أو كلااهما غير رقمي
+        # one or both prices are empty or non-numeric
         try:
             curr_p = float(curr_price) if curr_price not in (None, "") else None
             prev_p = float(prev_price) if prev_price not in (None, "") else None
@@ -125,7 +126,7 @@ def track_price_changes(
             }
         )
 
-    # ترتيب حسب نسبة التغيير تنازلياً (الأكبر تأثيراً أولاً)
+    # Sort by change percentage descending (highest impact first)
     changes.sort(
         key=lambda x: abs(x["change_pct"] or 0) if x["change_pct"] is not None else -1,
         reverse=True,
@@ -166,39 +167,39 @@ def summarize_changes(changes: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="تتبع تغييرات أسعار الأدوية بين إصدارين من البيانات"
+        description="Track drug price changes between two data versions"
     )
     parser.add_argument(
         "--current",
         type=Path,
         default=DEFAULT_CURRENT,
-        help="ملف البيانات الحالي (JSON)",
+        help="Current data file (JSON)",
     )
     parser.add_argument(
         "--previous",
         type=Path,
         required=True,
-        help="ملف البيانات السابق (المقارن)",
+        help="Previous data file to compare against (JSON)",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=DEFAULT_OUTPUT,
-        help="ملف مخرج تفاصيل التغييرات (JSON)",
+        help="Output file for change details (JSON)",
     )
     parser.add_argument(
         "--summary",
         type=Path,
         default=DEFAULT_SUMMARY,
-        help="ملف مخرج الإحصائيات المجمعة (JSON)",
+        help="Output file for summary statistics (JSON)",
     )
     args = parser.parse_args()
 
     if not args.current.exists():
-        print(f"خطأ: الملف الحالي غير موجود: {args.current}", file=sys.stderr)
+        print(f"Error: current file not found: {args.current}", file=sys.stderr)
         sys.exit(1)
     if not args.previous.exists():
-        print(f"خطأ: الملف السابق غير موجود: {args.previous}", file=sys.stderr)
+        print(f"Error: previous file not found: {args.previous}", file=sys.stderr)
         sys.exit(1)
 
     current = load_json(args.current)
@@ -214,14 +215,14 @@ def main() -> None:
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
-    print(f"تمت مقارنة {len(current)} سجل حالي مع {len(previous)} سجل سابق.")
-    print(f"تم العثور على {len(changes)} تغيير في الأسعار.")
-    print(f"  زيادات: {summary['price_increased']}")
-    print(f"  نقصانات: {summary['price_decreased']}")
-    print(f"  أسعار مضافة: {summary['price_added']}")
-    print(f"  أسعار محذوفة: {summary['price_removed']}")
-    print(f"تم حفظ التفاصيل في: {args.output}")
-    print(f"تم حفظ الإحصائيات في: {args.summary}")
+    print(f"Compared {len(current)} current records with {len(previous)} previous records.")
+    print(f"Found {len(changes)} price changes.")
+    print(f"  Increases: {summary['price_increased']}")
+    print(f"  Decreases: {summary['price_decreased']}")
+    print(f"  Prices added: {summary['price_added']}")
+    print(f"  Prices removed: {summary['price_removed']}")
+    print(f"Details saved to: {args.output}")
+    print(f"Summary saved to: {args.summary}")
 
 
 if __name__ == "__main__":
