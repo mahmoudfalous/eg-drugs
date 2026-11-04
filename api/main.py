@@ -1,15 +1,15 @@
 """
 eg-drugs REST API
 =================
-واجهة برمجة تطبيقات لقاعدة بيانات الأدوية المصرية (eg-drugs).
-تمكنك من البحث عن الأدوية باسمها العربي أو الإنجليزي، المادة الفعالة، الشركة، أو الباركود،
-وإيجاد الأدوية البديلة (نفس المادة الفعالة).
+REST API for the Egyptian Drug Database (eg-drugs).
+Search drugs by name (Arabic/English), active ingredient, company, or barcode,
+and find generic alternatives (same active ingredient).
 
-تشغيل محلي:
+Local run:
     pip install -r api/requirements.txt
     uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
-توثيق تفاعلي: http://localhost:8000/docs
+Interactive docs: http://localhost:8000/docs
 """
 
 import json
@@ -17,14 +17,15 @@ import sqlite3
 from pathlib import Path
 from typing import Optional, List
 from fastapi import FastAPI, Query, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "eg_drugs.sqlite"
+PRICE_CHANGES_PATH = Path(__file__).resolve().parent.parent / "data" / "price_changes.json"
+PRICE_CHANGES_SUMMARY_PATH = Path(__file__).resolve().parent.parent / "data" / "price_changes_summary.json"
 
 app = FastAPI(
     title="eg-drugs API",
-    description="REST API للبحث في قاعدة بيانات الأدوية المصرية (27,617+ دواء)",
+    description="REST API for the Egyptian Drug Database (27,617+ drugs)",
     version="1.0.0",
     contact={"name": "Abduallah Jamal", "url": "https://github.com/abduallahJamal"},
     license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
@@ -69,27 +70,29 @@ def row_to_dict(row: sqlite3.Row) -> dict:
 @app.get("/", tags=["General"])
 def read_root():
     return {
-        "message": "مرحباً بك في واجهة برمجة تطبيقات eg-drugs",
+        "message": "Welcome to eg-drugs API",
         "version": "1.0.0",
         "endpoints": {
-            "search": "/drugs/search?q=كلمة",
+            "search": "/drugs/search?q=keyword",
             "by_id": "/drugs/{id}",
             "by_barcode": "/drugs/barcode/{barcode}",
             "generics": "/drugs/generics/{active_ingredient}",
             "categories": "/categories",
             "companies": "/companies",
             "stats": "/stats",
+            "price_changes": "/price-changes",
+            "price_changes_summary": "/price-changes/summary",
             "docs": "/docs",
         },
-        "database": "eg_drugs.sqlite (27,617+ دواء)",
+        "database": "eg_drugs.sqlite (27,617+ drugs)",
     }
 
 
 @app.get("/drugs/search", response_model=List[Drug], tags=["Search"])
 def search_drugs(
-    q: str = Query(..., description="كلمة بحث (اسم إنجليزي، عربي، مادة فعالة، شركة)"),
-    limit: int = Query(20, ge=1, le=100, description="عدد النتائج القصوى"),
-    offset: int = Query(0, ge=0, description="تسجيلات للتخطي (للتصفح)"),
+    q: str = Query(..., description="Search keyword (name in English/Arabic, active ingredient, company)"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of results"),
+    offset: int = Query(0, ge=0, description="Records to skip (pagination)"),
 ):
     conn = get_conn()
     try:
@@ -116,7 +119,7 @@ def get_drug(drug_id: int):
         cur = conn.execute("SELECT * FROM eg_drugs WHERE id = ?", (drug_id,))
         row = cur.fetchone()
         if row is None:
-            raise HTTPException(status_code=404, detail="الدواء غير موجود")
+            raise HTTPException(status_code=404, detail="Drug not found")
         return row_to_dict(row)
     finally:
         conn.close()
@@ -129,7 +132,7 @@ def get_drug_by_barcode(barcode: str):
         cur = conn.execute("SELECT * FROM eg_drugs WHERE barcode = ?", (barcode,))
         row = cur.fetchone()
         if row is None:
-            raise HTTPException(status_code=404, detail="الباركود غير موجود")
+            raise HTTPException(status_code=404, detail="Barcode not found")
         return row_to_dict(row)
     finally:
         conn.close()
@@ -138,11 +141,11 @@ def get_drug_by_barcode(barcode: str):
 @app.get("/drugs/generics/{active}", response_model=List[Drug], tags=["Generics"])
 def get_generics(
     active: str,
-    limit: int = Query(50, ge=1, le=200, description="عدد النتائج القصوى"),
-    offset: int = Query(0, ge=0, description="تسجيلات للتخطي (للتصفح)"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of results"),
+    offset: int = Query(0, ge=0, description="Records to skip (pagination)"),
 ):
     """
-    إعادة الأدوية التي تحتوي على نفس المادة الفعالة (الأدوية البديلة/الج네ريك).
+    Return drugs containing the same active ingredient (generic alternatives).
     """
     conn = get_conn()
     try:
@@ -252,19 +255,12 @@ def get_stats():
         conn.close()
 
 
-PRICE_CHANGES_PATH = Path(__file__).resolve().parent.parent / "data" / "price_changes.json"
-PRICE_CHANGES_SUMMARY_PATH = Path(__file__).resolve().parent.parent / "data" / "price_changes_summary.json"
-
-
 @app.get("/price-changes", tags=["Stats"])
 def get_price_changes():
-    """
-    إرجاع قائمة تغييرات الأسعار التي تم رصدها عبر سكريبت price_tracker.
-    يتطلب تشغيل tools/price_tracker.py أولاً لإنشاء ملف data/price_changes.json.
-    """
+    """Return the list of price changes detected by tools/price_tracker.py."""
     if not PRICE_CHANGES_PATH.exists():
         return {
-            "message": "لا توجد بيانات تغييرات أسعار. شغّل tools/price_tracker.py أولاً.",
+            "message": "No price change data available. Run tools/price_tracker.py first.",
             "changes": [],
         }
     with open(PRICE_CHANGES_PATH, encoding="utf-8") as f:
@@ -274,10 +270,10 @@ def get_price_changes():
 
 @app.get("/price-changes/summary", tags=["Stats"])
 def get_price_changes_summary():
-    """إرجاع ملخص إحصائي لتغييرات الأسعار."""
+    """Return summary statistics for price changes."""
     if not PRICE_CHANGES_SUMMARY_PATH.exists():
         return {
-            "message": "لا توجد بيانات ملخص تغييرات الأسعار. شغّل tools/price_tracker.py أولاً.",
+            "message": "No price change summary available. Run tools/price_tracker.py first.",
             "summary": {},
         }
     with open(PRICE_CHANGES_SUMMARY_PATH, encoding="utf-8") as f:
